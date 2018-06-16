@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -10,7 +11,7 @@ import (
 )
 
 func execFortune() string {
-	cmd := exec.Command("fortune")
+	cmd := exec.Command("/usr/games/fortune")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
@@ -23,11 +24,18 @@ func execFortune() string {
 // fortune, the web server
 func FortuneServer(w http.ResponseWriter, req *http.Request) {
 	fortuneTxt := execFortune()
-	body := fmt.Sprintf("<html><body><pre>\n%v\n</pre></body></html>", fortuneTxt)
-	io.WriteString(w, body)
+	io.WriteString(w, `<html><head><title>Fortune</title></head>
+    <body><pre>`)
+	io.WriteString(w, fortuneTxt)
+	io.WriteString(w, "</pre></body></html>")
 }
 
 func main() {
+	port := flag.Int("port", 8080, "http port to listen on")
+	flag.Parse()
+
 	http.HandleFunc("/fortune", FortuneServer)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	addr := fmt.Sprintf(":%v", *port)
+	log.Printf("Listening on %v, CTRL-C to quit...", addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
